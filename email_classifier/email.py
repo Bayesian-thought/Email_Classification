@@ -1,3 +1,4 @@
+import pdb
 import re
 import os
 
@@ -54,19 +55,17 @@ def parse_email(uri):
                 subject = line[len("Subject:"):].strip()
             elif body_regex_obj.search(line):
                 body_found = True
-    return (datetime, header_from, header_to, header_cc, header_bcc, subject, truncate_body(body))
+    return (datetime, header_from, header_to, header_cc, header_bcc, subject, body)
 
-def truncate_body(og_body):
+def truncate_body(og_body, uri):
     """
         An attempt to remove the forwarded portion from an email
+        Want to preserve a forward however
     """
-    body_split = og_body.split("To:")
-    if len(body_split) < 3:
+    if "Forwarded" in og_body:
         return og_body
-    body_split[0] += "To:"
-    body_split[1] += "To:"
-    body_split[2] = "\n".join((body_split[2].split("\n"))[:-3])            # SORRY
-    return body_split[0] + body_split[1] + body_split[2]
+    body_split = og_body.split("To:")
+    return "\n".join((body_split[0].split("\n"))[:-2])
 
 class Email(object):
     """ 
