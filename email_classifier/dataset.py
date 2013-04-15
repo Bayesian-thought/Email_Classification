@@ -31,6 +31,7 @@ class DataInitializer(object):
         # pull out the (term) features we are interested in from the dataset
         word_features, name_features = extract_feature_sets(self.emails, reduce_by, reduce_using)
         self.word_features = word_features
+        # FIXME: Note: we're killing off name features here by assigning it an empty set
         self.name_features = set()
         self.build_doc_counts_per_word()
 
@@ -91,14 +92,21 @@ class DataInitializer(object):
                 value = 0
                 if feature_measure_method == "tfidf":
                     value = self._tf_idf(feature, email)
-                else:
+                elif feature_measure_method == "tf":
                     value = self._naive_counter(feature, email)
+                elif feature_measure_method == "boolean":
+                    value = self._boolean_counter(feature, email)
                 input_vector.append(value)
 
         return example_type.create_example(email.uri, input_vector, email.classification)
 
     def _naive_counter(self, word, document):
         return document.count(word)
+
+    def _boolean_counter(self, word, document):
+        if document.contains(word):
+            return 1
+        return 0
 
     def _tf_idf(self, word, document):
         """

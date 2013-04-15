@@ -11,7 +11,7 @@ def arff_format(example):
 
 def main():
     if len(sys.argv) < 4:
-        sys.stderr.write("Usage: python generate_examples.py <user-folder> <percent-reduction> <tf-idf (1) or tf (2)>\n")
+        sys.stderr.write("Usage: python generate_examples.py <user-folder> <percent-reduction> <tf-idf (1), tf (2), or boolean (3)>\n")
         return
 
     user_folder_uri = sys.argv[1]
@@ -19,6 +19,8 @@ def main():
     feature_measure_method = "tfidf"
     if int(sys.argv[3]) == 2:
         feature_measure_method = "tf"
+    elif int(sys.argv[3]) == 3:
+        feature_measure_method = "boolean"
     data_initializer = DataInitializer(user_folder_uri, reduce_features_by)
     example_type, examples = data_initializer.preprocess(feature_measure_method)
 
@@ -33,8 +35,10 @@ def main():
             if feature.startswith("__name__"):
                 example_file.write("@attribute %s {True,False}\n" % re.sub("\W", "_", feature))
             else:
-                example_file.write("@attribute %s real\n" % re.sub("\W", "_", feature))
-
+                if feature_measure_method == "tfidf" or feature_measure_method == "tf":
+                    example_file.write("@attribute %s real\n" % re.sub("\W", "_", feature))
+                elif feature_measure_method == "boolean":
+                    example_file.write("@attribute %s {1,0}\n" % re.sub("\W", "_", feature))
         example_file.write("@attribute folder {")
         for classification in example_type.classifications:
             example_file.write(re.sub("\W", "_", classification) + ",")
