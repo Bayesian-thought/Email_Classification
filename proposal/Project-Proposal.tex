@@ -1,0 +1,118 @@
+% Created 2013-02-27 Wed 00:40
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\providecommand{\alert}[1]{\textbf{#1}}
+
+\title{CS 1573: Term Project Proposal}
+\author{Joel Griffith\and Kathleen Marinan\and Rishi Sadhir}
+\date{\today}
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs Org-mode version 7.8.11}}
+
+\begin{document}
+
+\maketitle
+
+\setcounter{tocdepth}{3}
+\tableofcontents
+\vspace*{1cm}
+
+
+We propose a project in which we apply machine learning techniques to the problem of identifying and classifying incoming emails into user-defined folders based on message content.
+
+\section{Problem Introduction}
+\label{sec-1}
+
+\subsection{Background}
+\label{sec-1-1}
+Effective use of email communication has become an essential skill in modern life, being used in a variety of ways, from personal to corporate.  Different email users have different preferences for sorting their incoming mail.  Some are determined to maintain personal control over choosing folders into which their mail is placed, but as their volume of email increases, being able to determine an appropriate categorization scheme for incoming messages could prove useful.  However, because people are prone to organizational idiosyncrasies, a one-size-fits-all classification algorithm would be inappropriate.  Using machine learning to customize the classification algorithm for each person's individual mailbox makes more sense, and is the problem we will try to solve.
+
+Imagine a person who has been manually sorting their emails into folders they have created. Our goal is to be able to learn this user’s classification technique and be able to take over for him. This problem is particularly interesting because of potentially needing to “understand” the contents of a file in order to compare it to similar files. 
+Unfortunately, this level of comprehension leads us in to a complexity problem; the number of words in one’s mail archive is astoundingly large, and attempting to understand relationships among them is no simple task.
+
+\subsection{Approach}
+\label{sec-1-2}
+We will begin with a naive bag-of-words approach wherein each word is a feature, with its representation in the feature vector as a function of its appearance frequency per training example (individual email) and its frequency of appearance for the particular class (mail folder). This naive feature set will be expanded in an attempt to represent the various named entities within the system by analyzing the “to” and “from” fields of each email; the model will still be bag-of-words, however names will be treated differently since we believe they fundamentally differ from other words found in the body of the email, having more bearing on the classification. These name features will be binary variables indicating their presence or absence in an individual email.  
+
+A further addition to the feature space will be buckets for time. A discrete time-of-day feature will be added that splits the received time of an email into one of the following categories: evening, night, morning, and work-hours. We make the assumption that the average user's emails will involve workplace conversation, and transmission of these emails will tend to occur during the 9-to-5 work hours. Month received will also be added to the feature set because it is assumed that certain folders maintain more activity during certain periods of the year. We reason that the date and time an email is sent is important to classification because the body and context of an email is almost always time-sensitive.
+
+We will then begin to refine the feature set to reduce the noise brought on by irrelevant words, such as articles and conjunctions. We hope to aggressively filter around 95\% of the features (words) by using information gain, which measures the number of bits of information obtained for the prediction of categories by knowing the presence or absence in a document of a feature. The probabilities are computed as ratios of frequencies in the training data. Another approach is to use chi-square which measures the maximal strength of dependence between the feature and the categories. Experiments show that both measures can reduce the dimensionality by a factor of 100 without loss of categorization quality and potentially offering a small improvement.
+
+Once we have refined our feature space, we plan to use several well-known machine learning algorithms for classification, such as logistic regression, neural networks, and support vector machines (SVM), eventually comparing the results and deciding on a final model to fine-tune. Based on related work in this area, we anticipate the problem to be linearly-separable and have selected these algorithms due to their popularity in text classification, specifically email categorization.
+\section{Related Works}
+\label{sec-2}
+
+
+Our primary benchmark foray into email classification comes from University of Massachusetts researchers Ron Bekkerman, Andrew McCallum, and Gary Huang in their publication “Automatic Categorization of Email into Folders: Benchmark Experiments on Enron and SRI Corpora.”  They worked with the raw Enron email dataset and significantly reduced its size by considering only the top (in terms of number of folders and emails) users' emails. Once they had a reduced dataset, they did further preprocessing to eliminate folders that contained seemingly random emails sharing no clear classification. We plan to utilize a similar approach when preprocessing our dataset.
+
+Their input vector consisted of word counts for all known words, leaving out the top 100 most common words and once-used words. The learning algorithms used were Support Vector Machine (SVM), Maximum Entropy, Naive Bayes, and a modified version of Winnow referred to as “Wide-Margin” Winnow. SVM appeared to offer the highest accuracy, although “Wide-Margin” Winnow performed comparably.
+
+The authors of the paper ran into a few problems which were addressed in their conclusion; namely that grouping training examples by date does not perform better than a random permutation of the dataset when experimenting despite the former strategy being a more proper fit due to the nature of email.  A second problem, this time with the algorithms chosen, was that the classifiers tended to perform poorly when a new classification, or folder, would be introduced into the dataset.
+
+Another effort from the University of Texas by Chakravarthy et al utilized “A Graph Based Approach for Multi-Folder Email Classification.”  In their publication, they point out some of the flaws of some of the more common approaches to email categorization (including SVM and TF-IDF) where the structural relationships and the inherent hierarchy of information contained in an email are discarded.  This loss of information is analogous to reducing the dimensionality of a more general problem.  To avoid the pitfalls associated with traditional approaches, rather than treat an email like a “bag” of words they treated each email as a graph, thereby preserving some of the structure found within an email.
+
+Before working with the dataset, they preprocessed it by performing the following: stop-word elimination (removing conjunctions, articles, etc.), stemming (reducing inflected words to their roots/base/stem), and feature selection (ranking words based on their occurrence frequency across emails).
+
+Another publication, “Email Folder Classification Using Threads,” provides a description of three classes of features present in emails: unstructured text, semi-structured text, and numeric data. It also suggests an additional class: relationships, for example between emails and users. These relationships will be pursued in our paper.
+
+A crucial component of the success of our algorithms is how our features are selected.  In “A Comparative Study on Feature Selection in Text Categorization,” Yang and Pederson compared five methods of term selection: document frequency, information gain, mutual information, a Chi-squared test, and term strength.  They concluded that information gain and Chi-square were most effective in term removal without losing accuracy in overall categorization.  Additionally, document frequency was comparable to these two with up to 90\% term removal; this suggests document frequency can be considered a reliable measure for selecting informative features.
+\section{Resources Needed}
+\label{sec-3}
+
+
+The data we will be using for this project is the Enron email dataset, available to us as a hierarchy of folders representing each user and their personal email folders, or classifications, containing various emails. The dataset is available here (\href{http://www.cs.cmu.edu/~enron/}{http://www.cs.cmu.edu/\~enron/}). Folder categorization tends to be done at a personal level, therefore aggregating each user's data into a giant dataset does not make sense. Doing so would add too much noise, obfuscating the individual categorizations. Thus, we will examine the five most prolific users (in terms of number of folders and emails) similar to Bekkerman, McCallum, and Huang, and remove any folder with less than thirty emails since it would otherwise be difficult to train the algorithm well enough.
+
+Once we have refined the dataset, quite a bit of preprocessing will need to be done. Representing all of the features as a numerical vector will be a large task in and of itself. The first thing we must do is make a pass through all the emails and parse each to acquire a list of names, as we have decided that names deserve extra weight. While we are parsing the emails individually, we must also parse the date and extract the time-of-day and month features from it. The second thing we must do is truncate each of the files, removing words that we have deemed unimportant via the techniques mentioned above (information gain and chi square). Lastly, for each training example (email) we build the feature vector according to TF-IDF of the remaining words, \\<mailbox$_{\mathrm{name}}$> <TF-IDF W1> … <TF-IDF Wn> <month> <time-of-day bucket> <person1> … <person2>.
+\section{Project Setup}
+\label{sec-4}
+\subsection{Data collection}
+\label{sec-4-1}
+
+
+Common classifiers and learning algorithms cannot directly process the text documents in their original form. Therefore, during a preprocessing step, the documents are converted into a more manageable representation. Typically the documents are represented by feature vectors. The most common bag-of-words model simply uses all words in a document as the features, and thus the dimension of the feature space is equal to the number of different words in all of the documents.
+
+One of the main difficulties with approaching problems like this is this huge feature space. Analysis of documents requires, in at least the naive base case, a feature for each word. One may go even further and try to analyze relationships among words, in which case we find an exponential number of features to pile on. The simple bag-of-words feature space for a big collection of documents can reach into the hundreds of thousands. Most of these words are irrelevant to categorization, and can be dropped with no harm to the classifier performance, and may likely result in an improvement due to a reduction in noise. Deciding on how to shave off these extraneous features presents a problem of its own. As discussed earlier, we will use information gain and chi-square to reduce the feature set.
+
+As for the features themselves, we will use term frequency–inverse document frequency (tfidf) as weights. TF-IDF$_{\mathrm{WEIGHT}}$(w,d) = TermFreq(w,d) * log(N/DocFreq(w)) where w is word and d is doc. 
+\subsection{Model choice}
+\label{sec-4-2}
+
+
+As mentioned previously, we anticipate the problem to be linearly-separable and best solved by a linear model. Based on related readings, we have decided to run our experiment with logistic regression, neural networks, and support vector machines (SVMs), as they appear to be the go-to algorithms for text--and email--categorization. Since SVMs are binary classifiers and our users will have more than two folders each, we will have to augment the SVM in some way to model the problem; one possible approach is to reduce the problem to a series of binary classification problems.
+
+\subsection{Training}
+\label{sec-4-3}
+
+
+Because we are training on a single user’s dataset, we anticipate the use of k-fold cross validation for the creation of our training and testing data sets. Previous efforts have “randomized” the data in various ways, usually by chunking together emails based on date. We will simply perform a shuffle of the data--using the Fisher-Yates shuffle algorithm--for experimenting. If this proves to offer poor performance, we will pursue a similar strategy to that of previous authors and use date and time to chunk together data.
+
+
+\section{Conclusion format}
+\label{sec-5}
+
+Naive Bayes is considered to be the simplest and worst-performing algorithm for email categorization; therefore, we believe this algorithm can act as a baseline of performance against which we can compare our own algorithms. In “Automatic Categorization of Email into Folders: Benchmark Experiments on Enron and SRI Corpora,” a table of accuracies is given containing the results of each algorithm on a per-user basis with the Enron dataset. From this, we know that, of all the users, it averaged 57.5\% accuracy and had an accuracy as low as 32\% on the beck-s user. Similarly, we know that their best-performing algorithm, the SVM, had an average accuracy of 71.5\%, so we believe our upperbound will be in this range.
+
+Because of how our experiments are performed, we expect evaluation to be relatively easy to accomplish. For each user, we will perform k-fold cross validation on each of the selected user's emails, and since they are all already classified by their folders we will know the exact percentage of emails that were mislabeled. With this information we can use paired-t tests to compare the algorithms, tabulating the results for each user’s inbox and cross comparing them to determine which ones perform best under which conditions.
+
+\section{Work plan}
+\label{sec-6}
+
+
+Following the submission of this proposal, there are just over five weeks (excluding spring break) before the first day of project presentations.  We aim to have all of our data preprocessing completed before spring break, i.e. by March 9.  Following the completion of the data preprocessing, each member of the team will be responsible for overseeing one of the learning algorithm's completion, as follows: Rishi will cover logistic regression, Kathleen a neural network, and Joel a support vector machine.  We will have approximately two weeks to code and debug each algorithm, finishing by April 1st.  Then, having all of the algorithms complete, we will collaborate on the statistical analysis and comparison of the models.  This should not take more than a week (complete by April 9th), and then we will have the remaining time before the final week of classes to create and prepare our presentation.
+
+\end{document}

@@ -1,4 +1,11 @@
-Email_Classification
-====================
+cs1573
+======
 
-Classifiy a users emails with machine learning
+Rishi, Joel, Kathleen
+
+Term Project
+
+Dr. Hwa
+
+
+Machine learning for great good, also for categorizing emails and shit.
