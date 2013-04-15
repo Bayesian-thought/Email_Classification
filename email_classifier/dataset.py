@@ -55,7 +55,7 @@ class DataInitializer(object):
             features.append(word_feature)
         return ExampleType(classifications, features)
 
-    def preprocess(self):
+    def preprocess(self, feature_measure_method="tfidf"):
         """
             Constructs an Example (input vector + output) for each email and returns:
                 ExampleType, (List of) Examples
@@ -68,12 +68,12 @@ class DataInitializer(object):
         i = 0
         for email in self.emails:
             print "Processing email %d" % i
-            examples.append(self._parse_email(email, example_type))
+            examples.append(self._parse_email(email, example_type, feature_measure_method))
             i += 1
 
         return example_type, examples
 
-    def _parse_email(self, email, example_type):
+    def _parse_email(self, email, example_type, feature_measure_method):
         """
             Returns an Example representing the given email
         """
@@ -88,10 +88,12 @@ class DataInitializer(object):
                 name_occurs = feature[len('__name__'):] in email.get_from_names()
                 input_vector.append(name_occurs)
             else:
-                tf_idf_weight = self._tf_idf(feature, email)
-                if tf_idf_weight > 0.0:
-                    print tf_idf_weight
-                input_vector.append(tf_idf_weight)
+                value = 0
+                if feature_measure_method == "tfidf":
+                    value = self._tf_idf(feature, email)
+                else:
+                    value = self._naive_counter(feature, email)
+                input_vector.append(value)
 
         return example_type.create_example(email.uri, input_vector, email.classification)
 

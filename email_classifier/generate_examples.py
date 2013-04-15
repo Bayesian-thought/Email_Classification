@@ -10,14 +10,17 @@ def arff_format(example):
     return rep
 
 def main():
-    if len(sys.argv) < 3:
-        sys.stderr.write("Usage: python generate_examples.py <user-folder> <percent-reduction>\n")
+    if len(sys.argv) < 4:
+        sys.stderr.write("Usage: python generate_examples.py <user-folder> <percent-reduction> <tf-idf (1) or tf (2)>\n")
         return
 
     user_folder_uri = sys.argv[1]
     reduce_features_by = float(sys.argv[2])
+    feature_measure_method = "tfidf"
+    if int(sys.argv[3]) == 2:
+        feature_measure_method = "tf"
     data_initializer = DataInitializer(user_folder_uri, reduce_features_by)
-    example_type, examples = data_initializer.preprocess()
+    example_type, examples = data_initializer.preprocess(feature_measure_method)
 
     with open(user_folder_uri + "_examples.arff", 'w') as example_file:
         # write the metadata / schema
