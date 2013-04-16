@@ -11,17 +11,24 @@ def arff_format(example):
 
 def main():
     if len(sys.argv) < 4:
-        sys.stderr.write("Usage: python generate_examples.py <user-folder> <percent-reduction> <tf-idf (1), tf (2), or boolean (3)>\n")
+        sys.stderr.write("Usage: python generate_examples.py <user-folder> <info-gain (1), doc frequency (2)> <percent-reduction> <tf-idf (1), tf (2), or boolean (3)>\n")
         return
 
     user_folder_uri = sys.argv[1]
-    reduce_features_by = float(sys.argv[2])
+
+    reduce_using = "information gain"
+    if int(sys.argv[2]) == 2:
+        reduce_using = "document frequency"
+
+    reduce_features_by = float(sys.argv[3])
+
     feature_measure_method = "tfidf"
-    if int(sys.argv[3]) == 2:
+    if int(sys.argv[4]) == 2:
         feature_measure_method = "tf"
-    elif int(sys.argv[3]) == 3:
+    elif int(sys.argv[4]) == 3:
         feature_measure_method = "boolean"
-    data_initializer = DataInitializer(user_folder_uri, reduce_features_by)
+
+    data_initializer = DataInitializer(user_folder_uri, reduce_features_by, reduce_using)
     example_type, examples = data_initializer.preprocess(feature_measure_method)
 
     with open(user_folder_uri + "_examples.arff", 'w') as example_file:

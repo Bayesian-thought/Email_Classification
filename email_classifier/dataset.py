@@ -211,7 +211,22 @@ def reduce_feature_sets(word_features, emails, amount, using='information gain')
         return reduce_by_chi_square(word_features, classifications,
                                     global_word_count, class_word_count, 
                                     amount)
+    elif using == 'document frequency':
+        return reduce_by_document_frequency(word_features, classifications,
+                                            global_word_count, class_word_count,
+                                            amount)
     return word_features
+
+def reduce_by_percent(feature_list, amount):
+    new_word_features = set()
+
+    # keep only the top 1-amount percent
+    k_word = int(len(feature_list) * (1 - amount))
+    for i in range(k_word):
+        new_word_features.add(feature_list[i][1])
+
+    # make the new set immutable
+    return frozenset(new_word_features)
 
 def reduce_by_information_gain(word_features, classifications, 
                                global_word_count, class_word_count, 
@@ -227,18 +242,11 @@ def reduce_by_information_gain(word_features, classifications,
 
         i += 1
 
-    # keep only the top K features
-    new_word_features = set()
-
-    k_word = int(len(word_features) * (1 - amount))
-
+    # we want the highest information gain values first
     word_feature_info_gains.sort(reverse=True)
 
-    for i in range(k_word):
-        new_word_features.add(word_feature_info_gains[i][1])
+    return reduce_by_percent(word_feature_info_gains, amount)
 
-    # make the new set immutable
-    return frozenset(new_word_features)
 
 def reduce_by_chi_square(word_features, classifications, 
                          global_word_count, class_word_count, 
@@ -249,6 +257,24 @@ def reduce_by_chi_square(word_features, classifications,
 
     # make the new set immutable
     return frozenset(new_word_features)
+
+def reduce_by_document_frequency(word_features, classifications,
+                                global_word_count, class_word_count,
+                                amount):
+    i = 0
+    word_feature_doc_freqs = []
+    for word_feature in word_features:
+        word_feature_doc_freq = term_probability(word_feature, global_word_count)
+        word_feature_doc_freqs.append((word_feature_doc_freq, word_feature))
+
+        print "word (%d/%d): %s, %f" % (i, len(word_features), word_feature, word_feature_doc_freq)
+
+        i += 1
+
+    # we want the highest probability values first
+    word_feature_doc_freqs.sort(reverse=True)
+    
+    return reduce_by_percent(word_feature_doc_freqs, amount)
 
 def get_emails(user_folder_uri):
     """
@@ -373,7 +399,7 @@ def class_probability_given_term(classification, term, global_term_count, class_
     term_occurrences = global_term_count[term]
     return term_occurrences_in_class / (1.0 * term_occurrences)
 
-def class_probability_given_not_term(classification, term, global_term_count, class_term_count):
+def term_probability_given_class(term, classification, global_term_count, class_term_count):
     global _all_term_occurrences_in_class_cache
 
     if classification not in _all_term_occurrences_in_class_cache:
@@ -383,6 +409,34 @@ def class_probability_given_not_term(classification, term, global_term_count, cl
             all_term_occurrences_in_class += class_term_count[classification][t]
         _all_term_occurrences_in_class_cache[classification] = all_term_occurrences_in_class
 
-    not_term_occurrences_in_class = _all_term_occurrences_in_class_cache[classification] - class_term_count[classification][term]
-    return not_term_occurrences_in_class / _all_term_occurrences_in_class_cache[classification]
+    return class_term_count[classification][term] / _all_term_occurrences_in_class_cache[classification]
 
+# TODO: cache this again
+_sum_all_term_occurrences_in_class_cache = {}
+def class_probability_given_not_term(classification, term, global_term_count, class_term_count):
+    """
+        sum_all_term_occurrences_in_class - sum_occurrences_of_term_in_class
+        --------------------------------------------------------------------
+        sum_all_term_occurrences - sum_occurrences_of_term
+    """
+    global _sum_all_term_occurrences_in_class_cache
+    global _all_term_occurrences_cache
+
+    if classification not in _sum_all_term_occurrences_in_class_cache:
+        sum_all_term_occurrences_in_class = 0
+        for t in class_term_count[classification].keys():
+            sum_all_term_occurrences_in_class += class_term_count[classification][t]
+        _sum_all_term_occurrences_in_class_cache[classification] = sum_all_term_occurrences_in_class
+
+    sum_occurrences_of_term_in_class = class_term_count[classification][term]
+
+    if not _all_term_occurrences_cache:
+        sum_all_term_occurrences = 0
+        for t in global_term_count.keys():
+            sum_all_term_occurrences += global_term_count[t]
+        _all_term_occurrences_cache = sum_all_term_occurrences
+
+    sum_occurrences_of_term = global_term_count[term]
+
+    return ((_sum_all_term_occurrences_in_class_cache[classification] - sum_occurrences_of_term_in_class) / 
+            (_all_term_occurrences_cache - sum_occurrences_of_term))
