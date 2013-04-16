@@ -1,6 +1,7 @@
 import pdb
 import re
 import os
+from spellcheck import suggest
 
 to_regex_obj = re.compile(r"^X-To:.*", flags=re.UNICODE)
 cc_regex_obj = re.compile(r"^X-cc:.*", flags=re.UNICODE)
@@ -16,6 +17,8 @@ name_regex_obj = re.compile(r"(.*)<", flags=re.UNICODE)
 at_regex_obj = re.compile(r"(.*)@", flags=re.UNICODE)
 
 nonword_char_regex_obj = re.compile(r'[^\w\s\'\-]|_', flags=re.UNICODE)
+
+english_word_regex_obj = re.compile(r'\b(\w*(\w)\w*(?!\2)\w+)\b', flags=re.UNICODE)
 
 def parse_email(uri):
     """ 
@@ -232,10 +235,13 @@ class Email(object):
         # remove non-words (two -- or '' won't be found in any real words)
         words = filter(lambda w: w.find("--") == -1, words)
         words = filter(lambda w: w.find("''") == -1, words)
+        # spellcheck all words that appear to be English-like
+        #for i in range(len(words)):
+        #    if english_word_regex_obj.search(words[i]):
+        #        words[i] = suggest(words[i])
         # cache the result
-        self.words = words
-        self.words += self.get_names()
-        return words
+        self.words = words + self.get_names()
+        return self.words
 
     def get_length(self):
         return len(self.words)

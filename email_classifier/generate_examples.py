@@ -32,13 +32,10 @@ def main():
         example_file.write("@attribute __time-of-day__ {work,evening,night,morning}\n")
         for i in range(2, len(example_type.features)):
             feature = example_type.features[i]
-            if feature.startswith("__name__"):
-                example_file.write("@attribute %s {True,False}\n" % re.sub("\W", "_", feature))
-            else:
-                if feature_measure_method == "tfidf" or feature_measure_method == "tf":
-                    example_file.write("@attribute %s real\n" % re.sub("\W", "_", feature))
-                elif feature_measure_method == "boolean":
-                    example_file.write("@attribute %s {1,0}\n" % re.sub("\W", "_", feature))
+            if feature_measure_method == "tfidf" or feature_measure_method == "tf":
+                example_file.write("@attribute %s real\n" % re.sub("\W", "_", feature))
+            elif feature_measure_method == "boolean":
+                example_file.write("@attribute %s {1,0}\n" % re.sub("\W", "_", feature))
         example_file.write("@attribute folder {")
         for classification in example_type.classifications:
             example_file.write(re.sub("\W", "_", classification) + ",")

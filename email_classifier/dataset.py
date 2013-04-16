@@ -29,16 +29,14 @@ class DataInitializer(object):
         for classification in os.listdir(self.user_folder_uri):
             self.classification_emails[classification] = filter(lambda e: e.classification == classification, self.emails)
         # pull out the (term) features we are interested in from the dataset
-        word_features, name_features = extract_feature_sets(self.emails, reduce_by, reduce_using)
+        word_features = extract_feature_set(self.emails, reduce_by, reduce_using)
         self.word_features = word_features
-        # FIXME: Note: we're killing off name features here by assigning it an empty set
-        self.name_features = set()
         self.build_doc_counts_per_word()
 
     def build_doc_counts_per_word(self):
         self.doc_counts_per_feature = {}
         for index, feature in enumerate(self.word_features):
-            print "Computing doc counts for feature: %s" % feature
+            print "Computing doc counts for feature (%d/%d): %s" % (index, len(self.word_features), feature)
             num_docs_with_feature = 0
             for email in self.emails:
                 if email.contains(feature):
@@ -50,8 +48,6 @@ class DataInitializer(object):
         # give 'special' features __ pre and postfixes to avoid conflict
         # with word features
         features = ['__month__', '__time-of-day__']
-        for name_feature in self.name_features:
-            features.append('__name__' + name_feature)
         for word_feature in self.word_features:
             features.append(word_feature)
         return ExampleType(classifications, features)
@@ -66,11 +62,9 @@ class DataInitializer(object):
 
         # for each email, create an example
         examples = []
-        i = 0
-        for email in self.emails:
-            print "Processing email %d" % i
+        for index, email in enumerate(self.emails):
+            print "Converting email %d into example" % index
             examples.append(self._parse_email(email, example_type, feature_measure_method))
-            i += 1
 
         return example_type, examples
 
@@ -85,18 +79,14 @@ class DataInitializer(object):
         input_vector.append(email.get_time_of_day())
         for index in range(2, len(example_type.features)):
             feature = example_type.features[index]
-            if index < 2 + len(self.name_features):
-                name_occurs = feature[len('__name__'):] in email.get_from_names()
-                input_vector.append(name_occurs)
-            else:
-                value = 0
-                if feature_measure_method == "tfidf":
-                    value = self._tf_idf(feature, email)
-                elif feature_measure_method == "tf":
-                    value = self._naive_counter(feature, email)
-                elif feature_measure_method == "boolean":
-                    value = self._boolean_counter(feature, email)
-                input_vector.append(value)
+            value = 0
+            if feature_measure_method == "tfidf":
+                value = self._tf_idf(feature, email)
+            elif feature_measure_method == "tf":
+                value = self._naive_counter(feature, email)
+            elif feature_measure_method == "boolean":
+                value = self._boolean_counter(feature, email)
+            input_vector.append(value)
 
         return example_type.create_example(email.uri, input_vector, email.classification)
 
@@ -129,7 +119,7 @@ class DataInitializer(object):
             divided by
             (max_number_of_times_any_word_appears_in_document)
         """
-        return document.count(word) / (1.0 * document.get_length)
+        return document.count(word) / (1.0 * document.get_length
 
     def _inverse_doc_freq(self, word):
         """
@@ -181,83 +171,51 @@ class Example(object):
             return self.input_vector[feature_index]
         return None
 
-def extract_feature_sets(emails, reduce_by, using='information gain'):
+def extract_feature_set(emails, reduce_by, using='information gain'):
     """
-        Given a list of emails, extracts two sets of features from them: words and names
+        Given a list of emails, extracts word features from them
 
-        The word and name feature sets are reduced using the strategy provided as the
+        The feature set is reduced using the strategy provided as the
         'using' argument.
     """
-    word_features, name_features = create_feature_sets(emails)
-    return reduce_feature_sets(word_features, name_features, emails, reduce_by, using)
+    word_features = create_feature_set(emails)
+    return reduce_feature_sets(word_features, emails, reduce_by, using)
 
-def create_feature_sets(emails):
+def create_feature_set(emails):
     """ 
         Given a list of emails, returns two sets of features: words and names
     """
     global_word_count = get_word_counts(emails)[0]
-    global_name_count = get_name_counts(emails)[0]
 
     word_features = set()
-    name_features = set()
 
     for word in global_word_count.keys():
         word_features.add(word)
 
-    # TODO: How many times must a name appear for it to matter as a feature?
-    for name in global_name_count.keys():
-        name_features.add(name)
+    # make the set immutable now
+    return frozenset(word_features)
 
-    # make the sets immutable now
-    return frozenset(word_features), frozenset(name_features)
-
-def reduce_feature_sets(word_features, name_features, emails, amount, 
-                        using='information gain'):
+def reduce_feature_sets(word_features, emails, amount, using='information gain'):
     """
         Uses information gain / chi-square to narrow down the word and name features
     """
     global_word_count, class_word_count = get_word_counts(emails)
-    global_name_count, class_name_count = get_name_counts(emails)
 
     classifications = set(class_word_count.keys())
 
     if using == 'information gain':
-        return reduce_by_information_gain(word_features, name_features, classifications,
+        return reduce_by_information_gain(word_features, classifications,
                                           global_word_count, class_word_count, 
-                                          global_name_count, class_name_count,
                                           amount)
     elif using == 'chi square':
-        return reduce_by_chi_square(word_features, name_features, classifications,
+        return reduce_by_chi_square(word_features, classifications,
                                     global_word_count, class_word_count, 
-                                    global_name_count, class_name_count,
                                     amount)
-    return word_features, name_features
+    return word_features
 
-def reduce_by_information_gain(word_features, name_features, classifications, 
+def reduce_by_information_gain(word_features, classifications, 
                                global_word_count, class_word_count, 
-                               global_name_count, class_name_count, 
                                amount):
-    """
-        Uncomment to reduce the size of each feature set prior to computing info gain for each term
-    
-    new_word_features = set()
-    new_name_features = set()
-    i = 0
-    for word_feature in word_features:
-        if i == 50:
-            break
-        new_word_features.add(word_feature)
-        i += 1
-    i = 0
-    for name_feature in name_features:
-        if i == 50:
-            break
-        new_name_features.add(name_feature)
-        i += 1
-    word_features = set(new_word_features)
-    name_features = set(new_name_features)
-    """
-
     i = 0
     word_feature_info_gains = []
     for word_feature in word_features:
@@ -269,46 +227,28 @@ def reduce_by_information_gain(word_features, name_features, classifications,
 
         i += 1
 
-    i = 0
-    name_feature_info_gains = []
-    for name_feature in name_features:
-        name_feature_info_gain = information_gain(name_feature, classifications, 
-                                                  global_name_count, class_name_count)
-        name_feature_info_gains.append((name_feature_info_gain, name_feature))
-
-        print "name (%d/%d): %s, %f" % (i, len(name_features), name_feature, name_feature_info_gain)
-
-        i += 1
-
     # keep only the top K features
     new_word_features = set()
-    new_name_features = set()
 
     k_word = int(len(word_features) * (1 - amount))
-    k_name = int(len(name_features) * (1 - amount))
 
     word_feature_info_gains.sort(reverse=True)
-    name_feature_info_gains.sort(reverse=True)
 
     for i in range(k_word):
         new_word_features.add(word_feature_info_gains[i][1])
-    for i in range(k_name):
-        new_name_features.add(name_feature_info_gains[i][1])
 
-    # make the new sets immutable
-    return frozenset(new_word_features), frozenset(new_name_features)
+    # make the new set immutable
+    return frozenset(new_word_features)
 
-def reduce_by_chi_square(word_features, name_features, classifications, 
+def reduce_by_chi_square(word_features, classifications, 
                          global_word_count, class_word_count, 
-                         global_name_count, class_name_count, 
                          amount):
     new_word_features = set(word_features)
-    new_name_features = set(name_features)
 
     # TODO: chi square
 
-    # make the new sets immutable
-    return frozenset(new_word_features), frozenset(new_name_features)
+    # make the new set immutable
+    return frozenset(new_word_features)
 
 def get_emails(user_folder_uri):
     """
@@ -334,11 +274,12 @@ def get_word_counts(emails):
     class_word_count = {}
 
     # loop through all the emails and build up the global dictionary
-    for email in emails:
+    for index, email in enumerate(emails):
         # add a dictionary for each class
         if email.classification not in class_word_count:
             class_word_count[email.classification] = {}
 
+        print "Getting words from email %d" % index
         for word in email.get_words():
             if not word:
                 continue
@@ -363,46 +304,6 @@ def get_word_counts(emails):
             class_word_count[email.classification][word] += 1
 
     return global_word_count, class_word_count
-
-def get_name_counts(emails):
-    """
-        Looks at all emails and creates two dictionaries: one containing
-        the count of all names per classification, and the other containing 
-        the count of all names over the entire dataset
-    """
-    global_name_count = {}
-    class_name_count = {}
-
-    # loop through all the emails and build up the global dictionary
-    for email in emails:
-        # add a dictionary for each class
-        if email.classification not in class_name_count:
-            class_name_count[email.classification] = {}
-
-        for name in email.get_from_names():
-            if not name:
-                continue
-
-            if name not in global_name_count:
-                global_name_count[name] = 1
-            else:
-                global_name_count[name] += 1
-
-    # now that we have the global dictionary, initialize
-    # each term's count in each classification to 0
-    for classification in class_name_count:
-        for name in global_name_count:
-            class_name_count[classification][name] = 0
-
-    # loop through all the emails again and build up the class dictionaries
-    for email in emails:
-        for name in email.get_from_names():
-            if not name:
-                continue
-
-            class_name_count[email.classification][name] += 1
-
-    return global_name_count, class_name_count
 
 def information_gain(term, classifications, global_term_count, class_term_count):
     class_entropy = 0.0
