@@ -119,7 +119,7 @@ class DataInitializer(object):
             divided by
             (max_number_of_times_any_word_appears_in_document)
         """
-        return document.count(word) / (1.0 * document.get_length
+        return document.count(word) / (1.0 * document.get_length())
 
     def _inverse_doc_freq(self, word):
         """
