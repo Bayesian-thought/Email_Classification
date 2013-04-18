@@ -236,9 +236,9 @@ class Email(object):
         words = filter(lambda w: w.find("--") == -1, words)
         words = filter(lambda w: w.find("''") == -1, words)
         # spellcheck all words that appear to be English-like
-        for i in range(len(words)):
-            if english_word_regex_obj.search(words[i]):
-                words[i] = suggest(words[i])
+        #for i in range(len(words)):
+        #    if english_word_regex_obj.search(words[i]):
+        #    words[i] = suggest(words[i])
         self.words = words + [e.lower() for e in self.get_names()]
         return self.words
 

@@ -13,7 +13,7 @@ def arff_format(example):
 
 def main():
     if len(sys.argv) < 4:
-        sys.stderr.write("Usage: python generate_examples.py <user-folder> <info-gain (1), doc frequency (2)> <percent-reduction> <tf-idf (1), tf (2), or boolean (3)>\n")
+        sys.stderr.write("Usage: python generate_examples.py <user-folder> <info-gain (1), doc frequency (2)> <percent-reduction> <tf-idf (1), tf (2), or boolean (3)> <optional output-name>\n")
         return
 
     user_folder_uri = sys.argv[1]
