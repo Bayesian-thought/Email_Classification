@@ -1,3 +1,5 @@
+# python generate_examples.py data/farmer-d 1 .95 1
+
 import sys
 import re
 from dataset import DataInitializer
@@ -31,7 +33,12 @@ def main():
     data_initializer = DataInitializer(user_folder_uri, reduce_features_by, reduce_using)
     example_type, examples = data_initializer.preprocess(feature_measure_method)
 
-    with open(user_folder_uri + "_examples.arff", 'w') as example_file:
+    if len(sys.argv) == 6:
+        output_file = sys.argv[4] + "_out.arfff"
+    else:
+        output_file = user_folder_uri + "_out.arff"
+    
+    with open(output_file, 'w') as example_file:
         # write the metadata / schema
         example_file.write("@relation %s\n\n" % user_folder_uri)
 
