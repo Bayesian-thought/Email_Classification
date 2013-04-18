@@ -30,13 +30,17 @@ def main():
     elif int(sys.argv[4]) == 3:
         feature_measure_method = "boolean"
 
+    if len(sys.argv) == 6:
+        output_file = sys.argv[5] + "_out.arff"
+    else:
+        output_file = user_folder_uri + "_out.arff"
+
+    print "Writing to "+output_file        
+
     data_initializer = DataInitializer(user_folder_uri, reduce_features_by, reduce_using)
     example_type, examples = data_initializer.preprocess(feature_measure_method)
 
-    if len(sys.argv) == 6:
-        output_file = sys.argv[4] + "_out.arfff"
-    else:
-        output_file = user_folder_uri + "_out.arff"
+
     
     with open(output_file, 'w') as example_file:
         # write the metadata / schema
