@@ -204,13 +204,13 @@ class Email(object):
 
     def get_time_of_day(self):
         hour = self.get_hour()
-        if hour in range(9, 18):
+        if hour in range(9, 15):
             return 'work'
-        elif hour in range(18, 22):
+        elif hour in range(15, 25):
             return 'evening'
-        elif hour in range(22, 25) or hour in range(0, 6):
+        elif hour in range(0, 5) or hour in range(0, 6):
             return 'night'
-        elif hour in range(6, 9):
+        elif hour in range(5, 9):
             return 'morning'
 
     def get_words(self):
@@ -236,11 +236,10 @@ class Email(object):
         words = filter(lambda w: w.find("--") == -1, words)
         words = filter(lambda w: w.find("''") == -1, words)
         # spellcheck all words that appear to be English-like
-        #for i in range(len(words)):
-        #    if english_word_regex_obj.search(words[i]):
-        #        words[i] = suggest(words[i])
-        # cache the result
-        self.words = words + self.get_names()
+        for i in range(len(words)):
+            if english_word_regex_obj.search(words[i]):
+                words[i] = suggest(words[i])
+        self.words = words + [e.lower() for e in self.get_names()]
         return self.words
 
     def get_length(self):
