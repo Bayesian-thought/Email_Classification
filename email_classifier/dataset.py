@@ -1,6 +1,7 @@
 import re
 import os
 import math
+import sys
 from email import Email
 
 class DataInitializer(object):
@@ -105,12 +106,6 @@ class DataInitializer(object):
         """
         tf = self._term_freq(word, document)
         idf = self._inverse_doc_freq(word)
-        if tf > 0.0:
-            print "Classification %s" % document.classification
-            print "tf: %s, %f" % (word, tf)
-            print "idf: %s, %f" % (word, idf)
-        else:
-            print "Classification %s  --  0" % document.classification
         return tf * idf 
 
     def _term_freq(self, word, document):

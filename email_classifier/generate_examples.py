@@ -1,5 +1,3 @@
-# python generate_examples.py data/farmer-d 1 .95 1
-
 import sys
 import re
 from dataset import DataInitializer
@@ -31,9 +29,9 @@ def main():
         feature_measure_method = "boolean"
 
     if len(sys.argv) == 6:
-        output_file = sys.argv[5] + "_out.arff"
+        output_file = "arff_files/" + sys.argv[5] + "_out.arff"
     else:
-        output_file = user_folder_uri + "_out.arff"
+        output_file = "arff_files" + user_folder_uri + "_out.arff"
 
     print "Writing to "+output_file        
 
@@ -54,7 +52,7 @@ def main():
                 example_file.write("@attribute %s real\n" % re.sub("\W", "_", feature))
             elif feature_measure_method == "boolean":
                 example_file.write("@attribute %s {1,0}\n" % re.sub("\W", "_", feature))
-        example_file.write("@attribute folder {")
+        example_file.write("@attribute folderClassification {")
         for classification in example_type.classifications:
             example_file.write(re.sub("\W", "_", classification) + ",")
         example_file.write("\b}\n\n")
