@@ -8,4 +8,4 @@ Term Project
 Dr. Hwa
 
 
-Machine learning for great good, also for categorizing emails and shit.
+Learn the way auser classifies his emails!
